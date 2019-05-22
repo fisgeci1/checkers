@@ -1,4 +1,4 @@
-import java.awt.*;
+import javax.swing.*;
 
 public class MoveChecker {
 
@@ -19,6 +19,16 @@ public class MoveChecker {
             {BoardM.Blank, BoardM.Black, BoardM.Blank, BoardM.Black, BoardM.Blank, BoardM.Black, BoardM.Blank, BoardM.Black},
             {BoardM.Black, BoardM.Blank, BoardM.Black, BoardM.Blank, BoardM.Black, BoardM.Blank, BoardM.Black, BoardM.Blank}};
 
+    //this is used to reset the table after someone has won
+    private static final BoardM[][] STARTING_BOARD = {{BoardM.Blank, BoardM.Red, BoardM.Blank, BoardM.Red, BoardM.Blank, BoardM.Red, BoardM.Blank, BoardM.Red},
+            {BoardM.Red, BoardM.Blank, BoardM.Red, BoardM.Blank, BoardM.Red, BoardM.Blank, BoardM.Red, BoardM.Blank},
+            {BoardM.Blank, BoardM.Red, BoardM.Blank, BoardM.Red, BoardM.Blank, BoardM.Red, BoardM.Blank, BoardM.Red},
+            {BoardM.Blank, BoardM.Blank, BoardM.Blank, BoardM.Blank, BoardM.Blank, BoardM.Blank, BoardM.Blank, BoardM.Blank},
+            {BoardM.Blank, BoardM.Blank, BoardM.Blank, BoardM.Blank, BoardM.Blank, BoardM.Blank, BoardM.Blank, BoardM.Blank},
+            {BoardM.Black, BoardM.Blank, BoardM.Black, BoardM.Blank, BoardM.Black, BoardM.Blank, BoardM.Black, BoardM.Blank},
+            {BoardM.Blank, BoardM.Black, BoardM.Blank, BoardM.Black, BoardM.Blank, BoardM.Black, BoardM.Blank, BoardM.Black},
+            {BoardM.Black, BoardM.Blank, BoardM.Black, BoardM.Blank, BoardM.Black, BoardM.Blank, BoardM.Black, BoardM.Blank}};
+
 
     public void checkMove(int row, int col) {
 //        System.out.println("In here");
@@ -30,13 +40,24 @@ public class MoveChecker {
             if (row != -10 && col != -10) {
                 takePiece(row, col);
             }
+
+            if (winCondition()) {
+                int answe = JOptionPane.showConfirmDialog(null, "Play Again!", getWinner(turn) + " has won!!!", JOptionPane.YES_NO_OPTION);
+                if (answe == 0) {
+
+                    turn = BoardM.Black;
+                    tileSelected = false;
+                    botTurn = 1;
+                    resetBoard();
+                } else {
+                    System.exit(0);
+                }
+            }
+
             if (bot != null && botTurn == -1) {
                 bot.setBoard(board);
                 allowedMoves = new int[8][2];
                 bot.robotMove();
-            }
-            if (winCondition()) {
-                System.out.println("Game over");
             }
 
 
@@ -66,7 +87,7 @@ public class MoveChecker {
         return num;
     }
 
-    //checks if player has won
+    //checks if player has won(Checks to see if player has pieces left or if has possible moves available)
     private boolean winCondition() {
         boolean won = true;
         if (numOfPieces() > 0) {
@@ -529,7 +550,21 @@ public class MoveChecker {
         }
     }
 
-    public void setTileSelected(boolean tileSelected) {
-        this.tileSelected = tileSelected;
+    private void resetBoard() {
+        for (int i = 0; i < STARTING_BOARD.length; i++)
+            for (int j = 0; j < STARTING_BOARD[0].length; j++) {
+                board[i][j] = STARTING_BOARD[i][j];
+                tilles[i][j].setType(STARTING_BOARD[i][j]);
+            }
+
+        repaintBoard();
+    }
+
+    private String getWinner(BoardM t) {
+        if (t == BoardM.Red) {
+            return "Red";
+        } else {
+            return "Black";
+        }
     }
 }
