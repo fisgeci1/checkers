@@ -1,3 +1,5 @@
+import java.awt.*;
+
 public class MoveChecker {
 
     private Tilles[][] tilles;
@@ -5,6 +7,9 @@ public class MoveChecker {
     private BoardM turn = BoardM.Black;
     private static int[][] allowedMoves = new int[8][2];
     private static int selectedRow, selectedCol;
+    private RandomBot bot = null;
+    // 1 player  -1 bot
+    private int botTurn = 1;
     private static BoardM[][] board = {{BoardM.Blank, BoardM.Red, BoardM.Blank, BoardM.Red, BoardM.Blank, BoardM.Red, BoardM.Blank, BoardM.Red},
             {BoardM.Red, BoardM.Blank, BoardM.Red, BoardM.Blank, BoardM.Red, BoardM.Blank, BoardM.Red, BoardM.Blank},
             {BoardM.Blank, BoardM.Red, BoardM.Blank, BoardM.Red, BoardM.Blank, BoardM.Red, BoardM.Blank, BoardM.Red},
@@ -18,11 +23,22 @@ public class MoveChecker {
     public void checkMove(int row, int col) {
 //        System.out.println("In here");
 
-        if (tileSelected) {
-            takePiece(row, col);
+        if (tileSelected || botTurn == -1) {
+//            if (botTurn == -1) {
+//                System.out.println("called from bot");
+//            }
+            if (row != -10 && col != -10) {
+                takePiece(row, col);
+            }
+            if (bot != null && botTurn == -1) {
+                bot.setBoard(board);
+                allowedMoves = new int[8][2];
+                bot.robotMove();
+            }
             if (winCondition()) {
                 System.out.println("Game over");
             }
+
 
         } else {
             selectedRow = row;
@@ -313,7 +329,6 @@ public class MoveChecker {
 
     private void takePiece(int row, int col) {
         if (board[row][col] == BoardM.Blank) {
-
             boolean valid = false;
             boolean jumped = false;
             for (int i = 0; i < allowedMoves.length; i++) {
@@ -321,7 +336,8 @@ public class MoveChecker {
                     valid = true;
                 }
             }
-            if (valid) {
+
+            if (valid || botTurn == -1) {
 
                 //red pieces
                 if (selectedRow - row < 0) {
@@ -329,12 +345,15 @@ public class MoveChecker {
                     if (allowedMoves[7][0] != -1 || allowedMoves[6][0] != -1) {
                         if (selectedCol - col < 0) {
                             jumped = true;
+//                            System.out.println("row -1 col -1");
                             board[row][col] = board[selectedRow][selectedCol];
                             tilles[row][col].setType(board[selectedRow][selectedCol]);
                             board[row - 1][col - 1] = BoardM.Blank;
                             tilles[row - 1][col - 1].setType(BoardM.Blank);
                             tilles[row - 1][col - 1].repaint();
                         } else {
+//                            System.out.println("row -1 col +1");
+
                             jumped = true;
                             board[row][col] = board[selectedRow][selectedCol];
                             tilles[row][col].setType(board[selectedRow][selectedCol]);
@@ -353,10 +372,13 @@ public class MoveChecker {
                     tilles[selectedRow][selectedCol].setType(BoardM.Blank);
 
                     tilles[selectedRow][selectedCol].repaint();
-                    for (int i = 0; i < 8; i++) {
-                        if (allowedMoves[i][0] != -1) {
-                            tilles[allowedMoves[i][0]][allowedMoves[i][1]].allowedMove = false;
-                            tilles[allowedMoves[i][0]][allowedMoves[i][1]].repaint();
+
+                    if (botTurn != -1) {
+                        for (int i = 0; i < 8; i++) {
+                            if (allowedMoves[i][0] != -1) {
+                                tilles[allowedMoves[i][0]][allowedMoves[i][1]].allowedMove = false;
+                                tilles[allowedMoves[i][0]][allowedMoves[i][1]].repaint();
+                            }
                         }
                     }
 
@@ -367,6 +389,8 @@ public class MoveChecker {
                     if (allowedMoves[5][0] != -1 || allowedMoves[4][0] != -1) {
                         if (selectedCol - col < 0) {
                             jumped = true;
+//                            System.out.println("row +1 col +1");
+
                             board[row][col] = board[selectedRow][selectedCol];
                             tilles[row][col].setType(board[selectedRow][selectedCol]);
                             board[row + 1][col - 1] = BoardM.Blank;
@@ -374,6 +398,8 @@ public class MoveChecker {
                             tilles[row + 1][col - 1].repaint();
                         } else {
                             jumped = true;
+//                            System.out.println("row +1 col +1");
+
                             board[row][col] = board[selectedRow][selectedCol];
                             tilles[row][col].setType(board[selectedRow][selectedCol]);
                             board[row + 1][col + 1] = BoardM.Blank;
@@ -391,10 +417,13 @@ public class MoveChecker {
                     tilles[selectedRow][selectedCol].setType(BoardM.Blank);
 
                     tilles[selectedRow][selectedCol].repaint();
-                    for (int i = 0; i < 8; i++) {
-                        if (allowedMoves[i][0] != -1) {
-                            tilles[allowedMoves[i][0]][allowedMoves[i][1]].allowedMove = false;
-                            tilles[allowedMoves[i][0]][allowedMoves[i][1]].repaint();
+
+                    if (botTurn != -1) {
+                        for (int i = 0; i < 8; i++) {
+                            if (allowedMoves[i][0] != -1) {
+                                tilles[allowedMoves[i][0]][allowedMoves[i][1]].allowedMove = false;
+                                tilles[allowedMoves[i][0]][allowedMoves[i][1]].repaint();
+                            }
                         }
                     }
 
@@ -408,12 +437,32 @@ public class MoveChecker {
                 }
                 tileSelected = false;
 
-                if (!jumped || !anotherJump(row, col)) {
-                    turn = getOpositeTurn(turn);
+                switch (botTurn) {
+                    case 1:
+                        if (botTurn == 1 && (!jumped || !anotherJump(row, col))) {
+                            turn = getOpositeTurn(turn);
+                            if (bot != null) {
+                                botTurn = -1;
+                            }
+                        }
+                        break;
+                    case -1:
+                        bot.setBoard(board);
+                        if (jumped && bot.checkAnotherJump(row, col)) {
+                            checkMove(-10, -10);
+                        } else {
+                            turn = getOpositeTurn(turn);
+                            botTurn = 1;
+                            break;
+
+                        }
+
                 }
+
 
             }
         }
+        repaintBoard();
     }
 
     private BoardM getOpositeTurn(BoardM turn) {
@@ -442,6 +491,17 @@ public class MoveChecker {
         }
     }
 
+    public static void setAllowedMoves(int[][] allowedMoves) {
+        MoveChecker.allowedMoves = allowedMoves;
+    }
+
+    public static void setSelectedRow(int selectedRow) {
+        MoveChecker.selectedRow = selectedRow;
+    }
+
+    public static void setSelectedCol(int selectedCol) {
+        MoveChecker.selectedCol = selectedCol;
+    }
 
     public void setTilles(Tilles[][] tilles) {
         this.tilles = tilles;
@@ -449,5 +509,27 @@ public class MoveChecker {
 
     public BoardM getTile(int row, int col) {
         return board[row][col];
+    }
+
+    public static BoardM[][] getBoard() {
+        return board;
+    }
+
+    public void setBot(RandomBot bot) {
+        this.bot = bot;
+    }
+
+    private void repaintBoard() {
+        for (int i = 0; i < tilles.length; i++) {
+            for (int j = 0; j < tilles[0].length; j++) {
+                tilles[i][j].repaint();
+
+            }
+
+        }
+    }
+
+    public void setTileSelected(boolean tileSelected) {
+        this.tileSelected = tileSelected;
     }
 }
